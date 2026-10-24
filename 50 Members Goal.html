@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProJoin - 50 New Members Goal Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0a0a0c',
+                        cardBg: '#121218',
+                        cardBorder: '#272735',
+                        neonPink: '#ff2a85',
+                        neonPurple: '#b829ff',
+                        lightBg: '#f8f9fc',
+                        lightCardBg: '#ffffff',
+                        lightCardBorder: '#e2e8f0',
+                        lightText: '#1e293b',
+                        lightSubText: '#64748b'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        html.dark body {
+            background-color: #0a0a0c;
+            color: #f3f4f6;
+        }
+        html:not(.dark) body {
+            background-color: #f8f9fc;
+            color: #1e293b;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        html.dark ::-webkit-scrollbar-track {
+            background: #0a0a0c;
+        }
+        html:not(.dark) ::-webkit-scrollbar-track {
+            background: #f8f9fc;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ff2a85;
+            border-radius: 4px;
+        }
+        .neon-glow {
+            box-shadow: 0 0 25px rgba(255, 42, 133, 0.25);
+        }
+        .emerald-glow {
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #ff2a85 0%, #b829ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .bg-gradient-pink {
+            background: linear-gradient(135deg, #ff2a85 0%, #b829ff 100%);
+        }
+        html.dark .glass-card {
+            background: rgba(18, 18, 24, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 42, 133, 0.2);
+        }
+        html:not(.dark) .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 42, 133, 0.25);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-neonPink selection:text-white">
+
+    <!-- Firebase SDK Module Initialization -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+        import { getDatabase, ref, get, child, onValue, update, set, push, remove } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBAjO52-ZVb6jKurqJREtMo7PrRdmRf6is",
+            authDomain: "projoin-b2d3c.firebaseapp.com",
+            databaseURL: "https://projoin-b2d3c-default-rtdb.firebaseio.com",
+            projectId: "projoin-b2d3c",
+            storageBucket: "projoin-b2d3c.firebasestorage.app",
+            messagingSenderId: "886679815440",
+            appId: "1:886679815440:web:279c6b93e3bd38bacc1195",
+            measurementId: "G-5Z0FKF3CZL"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window.db = db;
+        window.firebaseRefs = { ref, get, child, onValue, update, set, push, remove };
+
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
+
+    <!-- Custom Notification Toast -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- Custom Alert / Notice Modal -->
+    <div id="customModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm hidden">
+        <div class="glass-card rounded-2xl p-6 max-w-md w-full mx-4 neon-glow border border-neonPink/30">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 rounded-full bg-neonPink/20 flex items-center justify-center text-neonPink">
+                    <i id="modalIcon" class="fa-solid fa-shield-halved text-lg"></i>
+                </div>
+                <h3 id="modalTitle" class="text-xl font-bold">Admin Notice</h3>
+            </div>
+            <p id="modalMessage" class="text-sm mb-6 leading-relaxed opacity-95"></p>
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeModal()" class="px-5 py-2.5 rounded-xl bg-gradient-pink text-white font-semibold hover:opacity-95 transition shadow-lg shadow-neonPink/30">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Screen -->
+    <div id="adminLoginScreen" class="fixed inset-0 z-40 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neonPink/10 via-transparent to-transparent pointer-events-none"></div>
+
+        <div class="glass-card w-full max-w-md rounded-3xl p-8 shadow-2xl neon-glow relative z-10">
+            <div class="absolute top-6 right-6">
+                <button onclick="toggleTheme()" class="w-10 h-10 rounded-xl bg-cardBorder/30 border border-neonPink/30 flex items-center justify-center text-neonPink hover:bg-neonPink hover:text-white transition shadow">
+                    <i id="authThemeIcon" class="fa-solid fa-moon"></i>
+                </button>
+            </div>
+
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-pink text-white text-3xl font-extrabold mb-3 shadow-lg shadow-neonPink/40">
+                    <i class="fa-solid fa-bullseye"></i>
+                </div>
+                <h1 class="text-3xl font-extrabold tracking-tight">GOAL <span class="text-gradient">TRACKER</span></h1>
+                <p class="text-xs mt-1 opacity-75">50 New Members Addition Tracking System</p>
+            </div>
+
+            <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5 opacity-80">Admin Username</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center opacity-50"><i class="fa-solid fa-user"></i></span>
+                        <input type="text" id="adminUser" required placeholder="admin" class="w-full bg-black/5 dark:bg-cardBg border border-gray-300 dark:border-cardBorder rounded-xl px-4 py-3 pl-10 placeholder-gray-400 focus:outline-none focus:border-neonPink transition">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5 opacity-80">Admin Password</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center opacity-50"><i class="fa-solid fa-lock"></i></span>
+                        <input type="password" id="adminPass" required placeholder="••••••••" class="w-full bg-black/5 dark:bg-cardBg border border-gray-300 dark:border-cardBorder rounded-xl px-4 py-3 pl-10 placeholder-gray-400 focus:outline-none focus:border-neonPink transition">
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-pink text-white font-bold hover:opacity-95 transition shadow-lg shadow-neonPink/30 flex items-center justify-center space-x-2">
+                    <span>Access Goal Dashboard</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Admin Dashboard Wrapper -->
+    <div id="adminDashboard" class="flex-1 flex flex-col hidden">
+        <header class="glass-card sticky top-0 z-30 border-b px-4 lg:px-8 py-3.5 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-pink flex items-center justify-center text-white font-black text-lg shadow-md shadow-neonPink/40">
+                    <i class="fa-solid fa-bullseye"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-black tracking-tight">PROJOIN <span class="text-gradient">GOAL 50</span></span>
+                    <div class="flex items-center space-x-2">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                        <span class="text-[11px] opacity-80 font-medium">Realtime Member Addition Counter</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleTheme()" class="w-10 h-10 rounded-xl glass-card border border-neonPink/30 flex items-center justify-center text-neonPink hover:bg-neonPink hover:text-white transition shadow" title="Toggle Theme">
+                    <i id="themeIcon" class="fa-solid fa-moon"></i>
+                </button>
+                <button onclick="adminLogout()" class="px-4 py-2 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white text-xs font-bold transition flex items-center space-x-2">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 space-y-6">
+
+            <!-- HERO GOAL BANNER SECTION -->
+            <div id="goalBannerCard" class="glass-card rounded-3xl p-6 lg:p-8 border-2 border-neonPink/40 relative overflow-hidden transition-all duration-500 shadow-xl">
+                <!-- Background ambient glow -->
+                <div class="absolute -right-20 -bottom-20 w-80 h-80 bg-neonPink/20 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute -left-20 -top-20 w-80 h-80 bg-neonPurple/20 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6">
+                    <div class="space-y-3 text-center lg:text-left flex-1">
+                        <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-neonPink/10 border border-neonPink/30 text-neonPink text-xs font-bold uppercase tracking-wider">
+                            <i class="fa-solid fa-flag-checkered"></i>
+                            <span id="goalStatusBadgeText">Goal In Progress</span>
+                        </div>
+
+                        <h2 class="text-3xl lg:text-4xl font-black tracking-tight">
+                            Target: <span class="text-gradient">50 New Members</span> Added
+                        </h2>
+
+                        <p id="startDateLabel" class="text-xs sm:text-sm opacity-80 font-medium">
+                            Starting Date: <span id="startDateDisplay" class="font-bold text-neonPink">Setting up...</span>
+                        </p>
+                    </div>
+
+                    <!-- Counter Circle / Big Stats -->
+                    <div class="flex items-center space-x-6 bg-black/20 dark:bg-cardBg/80 p-5 rounded-2xl border border-neonPink/30 shrink-0">
+                        <div class="text-center">
+                            <div id="currentCountDisplay" class="text-4xl sm:text-5xl font-black text-neonPink tracking-tight">0</div>
+                            <div class="text-[11px] uppercase tracking-wider font-bold opacity-60 mt-1">Added So Far</div>
+                        </div>
+
+                        <div class="text-3xl font-light opacity-30">/</div>
+
+                        <div class="text-center">
+                            <div id="targetCountDisplay" class="text-4xl sm:text-5xl font-black text-purple-400 tracking-tight">50</div>
+                            <div class="text-[11px] uppercase tracking-wider font-bold opacity-60 mt-1">Goal Target</div>
+                        </div>
+
+                        <div class="text-3xl font-light opacity-30">=</div>
+
+                        <div class="text-center">
+                            <div id="remainingCountDisplay" class="text-4xl sm:text-5xl font-black text-amber-400 tracking-tight">50</div>
+                            <div class="text-[11px] uppercase tracking-wider font-bold opacity-60 mt-1">Remaining</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PROGRESS BAR -->
+                <div class="mt-8 space-y-2">
+                    <div class="flex justify-between items-center text-xs font-bold">
+                        <span class="flex items-center space-x-1.5">
+                            <i class="fa-solid fa-chart-line text-neonPink"></i>
+                            <span>Progress Level</span>
+                        </span>
+                        <span id="progressPercentText" class="text-neonPink font-extrabold text-sm font-mono">0% Completed</span>
+                    </div>
+
+                    <div class="w-full h-5 bg-black/40 rounded-full p-1 border border-cardBorder overflow-hidden">
+                        <div id="progressBarFill" class="h-full bg-gradient-pink rounded-full transition-all duration-700 ease-out shadow-lg" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- GOAL COMPLETED ALERT BANNER (HIDDEN UNTIL 50 REACHED) -->
+                <div id="goalReachedAlert" class="mt-6 p-4 rounded-2xl bg-emerald-500/20 border-2 border-emerald-500 text-emerald-400 hidden flex items-center justify-between animate-bounce">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500 text-black flex items-center justify-center font-black text-2xl">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-black text-emerald-400">GOAL COMPLETED! 🎉</h4>
+                            <p class="text-xs font-medium text-emerald-200">50 New Members Have Successfully Joined Since Start Date!</p>
+                        </div>
+                    </div>
+                    <button onclick="triggerConfetti()" class="px-4 py-2 rounded-xl bg-emerald-500 text-black font-extrabold text-xs hover:bg-emerald-400 transition shadow-lg">
+                        Celebrate Again! 🎉
+                    </button>
+                </div>
+            </div>
+
+            <!-- CONTROLS & SETTINGS CARD -->
+            <div class="glass-card rounded-2xl p-5 lg:p-6 border space-y-4">
+                <div class="flex items-center justify-between border-b pb-3">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-neonPink/20 text-neonPink flex items-center justify-center font-bold">
+                            <i class="fa-solid fa-sliders"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold">Goal Settings & Manual Start Date</h3>
+                            <p class="text-xs opacity-75">Start Date permanent Oct 23, 2026 par fixed hai. Zarurat hone par yahan se change kar sakte hain.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5 opacity-80">Start Date & Time</label>
+                        <input type="datetime-local" id="goalStartPicker" class="w-full bg-black/10 dark:bg-cardBg border border-neonPink/30 rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-neonPink transition">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5 opacity-80">Goal Target Count</label>
+                        <input type="number" id="goalTargetInput" value="50" min="1" class="w-full bg-black/10 dark:bg-cardBg border border-neonPink/30 rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-neonPink transition font-mono">
+                    </div>
+
+                    <div class="flex space-x-2">
+                        <button onclick="startGoalToday()" class="flex-1 py-2.5 rounded-xl bg-gradient-pink text-white text-xs font-bold hover:opacity-90 transition shadow-lg shadow-neonPink/30 flex items-center justify-center space-x-1.5">
+                            <i class="fa-solid fa-calendar-check"></i>
+                            <span>Reset To Oct 23, 2026</span>
+                        </button>
+
+                        <button onclick="saveCustomGoalSettings()" class="px-4 py-2.5 rounded-xl bg-cardBorder text-xs font-bold hover:bg-neonPink hover:text-white transition">
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW MEMBERS LIST TABLE (REGISTERED SINCE START DATE) -->
+            <div class="glass-card rounded-3xl p-6 lg:p-8 border space-y-4">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b pb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                            <i class="fa-solid fa-user-plus"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-3">
+                                <h3 class="text-xl font-bold">New Members Joined List</h3>
+                                <span id="listCountBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-mono">0 Members</span>
+                            </div>
+                            <p class="text-sm opacity-70 mt-0.5">Showing members who registered on or after Oct 23, 2026.</p>
+                        </div>
+                    </div>
+
+                    <div class="relative w-full sm:w-64">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center opacity-50"><i class="fa-solid fa-search"></i></span>
+                        <input type="text" id="memberSearchInput" onkeyup="filterGoalMembersTable()" placeholder="Search new member..." class="w-full bg-black/5 dark:bg-cardBg border rounded-xl px-4 py-2.5 pl-10 text-xs placeholder-gray-400 focus:outline-none focus:border-neonPink transition">
+                    </div>
+                </div>
+
+                <div class="max-h-[500px] overflow-y-auto rounded-2xl border border-cardBorder">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="sticky top-0 bg-[#121218] z-10">
+                            <tr class="border-b text-xs uppercase opacity-70 font-semibold text-neonPink">
+                                <th class="py-3 px-4"># No.</th>
+                                <th class="py-3 px-4">Member Name</th>
+                                <th class="py-3 px-4">Email Address</th>
+                                <th class="py-3 px-4">Referral ID</th>
+                                <th class="py-3 px-4">Registration Date & Time</th>
+                                <th class="py-3 px-4">Coins Balance</th>
+                                <th class="py-3 px-4 text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="goalMembersTableBody" class="divide-y text-sm">
+                            <tr>
+                                <td colspan="7" class="py-8 text-center opacity-60">Loading Goal Members Data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Script Logic -->
+    <script>
+        // Default Permanent Start Timestamp (Oct 23, 2026 00:00:00)
+        const FIXED_START_DATE = new Date('2026-10-23T00:00:00').getTime();
+
+        let rawUsersCache = {};
+        let currentGoalSettings = {
+            startDate: FIXED_START_DATE,
+            target: 50
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('projoin_admin_theme') || 'dark';
+            if (savedTheme === 'light') {
+                document.documentElement.classList.remove('dark');
+                updateThemeIcon('light');
+            } else {
+                document.documentElement.classList.add('dark');
+                updateThemeIcon('dark');
+            }
+            checkAdminSession();
+        });
+
+        // Wait for Firebase to load before starting listeners
+        window.addEventListener('firebase-ready', () => {
+            initGoalSettingsListener();
+            initDatabaseListener();
+        });
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.setItem('projoin_admin_theme', 'light');
+                updateThemeIcon('light');
+            } else {
+                html.classList.add('dark');
+                localStorage.setItem('projoin_admin_theme', 'dark');
+                updateThemeIcon('dark');
+            }
+        }
+
+        function updateThemeIcon(mode) {
+            const icon = document.getElementById('themeIcon');
+            const authIcon = document.getElementById('authThemeIcon');
+            if (mode === 'light') {
+                if (icon) icon.className = "fa-solid fa-sun";
+                if (authIcon) authIcon.className = "fa-solid fa-sun";
+            } else {
+                if (icon) icon.className = "fa-solid fa-moon";
+                if (authIcon) authIcon.className = "fa-solid fa-moon";
+            }
+        }
+
+        function checkAdminSession() {
+            const isAdminLoggedIn = localStorage.getItem('projoin_admin_logged');
+            if (isAdminLoggedIn === 'true') {
+                showAdminDashboard();
+            } else {
+                showAdminLogin();
+            }
+        }
+
+        function showAdminLogin() {
+            document.getElementById('adminLoginScreen').classList.remove('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+        }
+
+        function showAdminDashboard() {
+            document.getElementById('adminLoginScreen').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.remove('hidden');
+            
+            if (window.firebaseRefs) {
+                initGoalSettingsListener();
+                initDatabaseListener();
+            }
+        }
+
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            const user = document.getElementById('adminUser').value.trim();
+            const pass = document.getElementById('adminPass').value;
+
+            if (user === 'admin' && pass === 'admin1234') {
+                localStorage.setItem('projoin_admin_logged', 'true');
+                showAdminDashboard();
+                showToast("Welcome to Goal Tracker Dashboard!", "success");
+            } else {
+                showModal("Access Denied", "Invalid admin username or password.", "fa-triangle-exclamation");
+            }
+        }
+
+        function adminLogout() {
+            localStorage.removeItem('projoin_admin_logged');
+            showAdminLogin();
+            showToast("Logged out securely.", "success");
+        }
+
+        // Firebase Goal Settings Listener
+        function initGoalSettingsListener() {
+            if (!window.firebaseRefs || !window.db) return;
+            const { ref, onValue } = window.firebaseRefs;
+            onValue(ref(window.db, 'settings/goal50Config'), (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    currentGoalSettings = {
+                        startDate: data.startDate || FIXED_START_DATE,
+                        target: data.target || 50
+                    };
+                } else {
+                    currentGoalSettings = {
+                        startDate: FIXED_START_DATE,
+                        target: 50
+                    };
+                }
+                updateGoalUI();
+            });
+        }
+
+        // Firebase Database Realtime Listener for Users
+        function initDatabaseListener() {
+            if (!window.firebaseRefs || !window.db) return;
+            const { ref, onValue } = window.firebaseRefs;
+            onValue(ref(window.db, 'users'), (snapshot) => {
+                if (snapshot.exists()) {
+                    rawUsersCache = snapshot.val();
+                } else {
+                    rawUsersCache = {};
+                }
+                updateGoalUI();
+            });
+        }
+
+        function updateGoalUI() {
+            const startTimestamp = currentGoalSettings.startDate || FIXED_START_DATE;
+            const targetCount = currentGoalSettings.target || 50;
+
+            const startDateObj = new Date(startTimestamp);
+            const formattedDateStr = startDateObj.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+
+            document.getElementById('startDateDisplay').innerText = formattedDateStr;
+
+            const isoStr = new Date(startTimestamp - (startDateObj.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+            document.getElementById('goalStartPicker').value = isoStr;
+            document.getElementById('goalTargetInput').value = targetCount;
+
+            let newMembersList = [];
+            for (let uid in rawUsersCache) {
+                const u = rawUsersCache[uid];
+                const regTime = u.createdAt || u.lastLogin || 0;
+                if (regTime >= startTimestamp) {
+                    newMembersList.push({ uid, ...u, regTime });
+                }
+            }
+
+            newMembersList.sort((a, b) => b.regTime - a.regTime);
+
+            const currentAdded = newMembersList.length;
+            const remaining = Math.max(0, targetCount - currentAdded);
+            const percentage = Math.min(100, Math.round((currentAdded / targetCount) * 100));
+
+            document.getElementById('currentCountDisplay').innerText = currentAdded;
+            document.getElementById('targetCountDisplay').innerText = targetCount;
+            document.getElementById('remainingCountDisplay').innerText = remaining;
+            document.getElementById('progressPercentText').innerText = `${percentage}% Completed`;
+            document.getElementById('progressBarFill').style.width = `${percentage}%`;
+            document.getElementById('listCountBadge').innerText = `${currentAdded} Members`;
+
+            const banner = document.getElementById('goalBannerCard');
+            const alertBox = document.getElementById('goalReachedAlert');
+            const badgeText = document.getElementById('goalStatusBadgeText');
+
+            if (currentAdded >= targetCount) {
+                banner.classList.add('emerald-glow', 'border-emerald-500');
+                banner.classList.remove('border-neonPink/40');
+                alertBox.classList.remove('hidden');
+                badgeText.innerText = "GOAL ACHIEVED! 🎉";
+            } else {
+                banner.classList.remove('emerald-glow', 'border-emerald-500');
+                banner.classList.add('border-neonPink/40');
+                alertBox.classList.add('hidden');
+                badgeText.innerText = "Goal In Progress";
+            }
+
+            renderGoalMembersTable(newMembersList);
+        }
+
+        function renderGoalMembersTable(members) {
+            const tbody = document.getElementById('goalMembersTableBody');
+            tbody.innerHTML = '';
+
+            if (members.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center opacity-60">No new members registered since ${document.getElementById('startDateDisplay').innerText} yet.</td></tr>`;
+                return;
+            }
+
+            members.forEach((m, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-white/5 transition border-b border-cardBorder/50";
+
+                const regDateObj = new Date(m.regTime);
+                const regStr = regDateObj.toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+
+                const statusBadge = m.isBanned 
+                    ? `<span class="px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold">Banned</span>` 
+                    : `<span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold">Active Member</span>`;
+
+                tr.innerHTML = `
+                    <td class="py-3.5 px-4 font-mono font-bold text-neonPink text-xs">${idx + 1}</td>
+                    <td class="py-3.5 px-4 font-bold text-white">${m.name || 'N/A'}</td>
+                    <td class="py-3.5 px-4 font-mono text-xs opacity-80">${m.email || 'N/A'}</td>
+                    <td class="py-3.5 px-4 font-mono text-xs font-bold text-neonPink">${m.referralId || 'N/A'}</td>
+                    <td class="py-3.5 px-4 font-mono text-xs font-semibold text-cyan-300">${regStr}</td>
+                    <td class="py-3.5 px-4 font-mono font-bold text-emerald-400">${(m.balance || 0).toFixed(2)} Coins</td>
+                    <td class="py-3.5 px-4 text-right">${statusBadge}</td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterGoalMembersTable() {
+            const query = document.getElementById('memberSearchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#goalMembersTableBody tr');
+
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                if (text.includes(query)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        async function startGoalToday() {
+            if (!window.firebaseRefs) return;
+            const target = parseInt(document.getElementById('goalTargetInput').value) || 50;
+
+            const { ref, set } = window.firebaseRefs;
+            try {
+                await set(ref(window.db, 'settings/goal50Config'), {
+                    startDate: FIXED_START_DATE,
+                    target: target
+                });
+                showToast("Goal Start Date set to Oct 23, 2026 successfully!", "success");
+            } catch (err) {
+                console.error(err);
+                showModal("Error", "Failed to update goal start date.", "fa-triangle-exclamation");
+            }
+        }
+
+        async function saveCustomGoalSettings() {
+            if (!window.firebaseRefs) return;
+            const pickerVal = document.getElementById('goalStartPicker').value;
+            const target = parseInt(document.getElementById('goalTargetInput').value) || 50;
+
+            if (!pickerVal) {
+                showModal("Error", "Please select a valid date and time.", "fa-triangle-exclamation");
+                return;
+            }
+
+            const selectedTime = new Date(pickerVal).getTime();
+
+            const { ref, set } = window.firebaseRefs;
+            try {
+                await set(ref(window.db, 'settings/goal50Config'), {
+                    startDate: selectedTime,
+                    target: target
+                });
+                showToast("Goal Settings Saved & Synced Successfully!", "success");
+            } catch (err) {
+                console.error(err);
+                showModal("Error", "Failed to save goal settings.", "fa-triangle-exclamation");
+            }
+        }
+
+        function triggerConfetti() {
+            confetti({
+                particleCount: 120,
+                spread: 80,
+                origin: { y: 0.6 }
+            });
+        }
+
+        // Custom Toast Function
+        function showToast(message, type = "info") {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto flex items-center space-x-3 px-4 py-3 rounded-2xl shadow-xl border text-xs font-bold transition-all duration-300 transform translate-y-2 opacity-0 glass-card ${
+                type === 'success' ? 'border-emerald-500 text-emerald-400' : 'border-neonPink text-neonPink'
+            }`;
+
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-bell'} text-base"></i> <span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // Custom Modal Function
+        function showModal(title, message, iconClass = "fa-shield-halved") {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            document.getElementById('modalIcon').className = `fa-solid ${iconClass} text-lg`;
+            document.getElementById('customModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('customModal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
